@@ -1,0 +1,47 @@
+[
+    {
+        "_id": {"$oid": "646473688b179ae29b7264d6"},
+        "user": "alex.petrov@company.com",
+        "client": "ClientA",
+        "project": "ProjectX",
+        "dayStart": "20.05.2023",
+        "dayFinish": "26.05.2023",
+        "hours": "48",
+        "task": null,
+        "author": "alex.petrov@company.com",
+        "distributed": false,
+        "daily_hours": [{"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "0"}, {"$numberInt": "8"}],
+        "approvals": [],
+        "status": "Approved"
+    },
+    {
+        "_id": {"$oid": "646473688b179ae29b7264d7"},
+        "user": "sophia.li@company.com",
+        "client": "ClientB",
+        "project": "ProjectY",
+        "dayStart": "21.05.2023",
+        "dayFinish": "27.05.2023",
+        "hours": "40",
+        "task": null,
+        "author": "sophia.li@company.com",
+        "distributed": false,
+        "daily_hours": [{"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "0"}, {"$numberInt": "0"}, {"$numberInt": "8"}],
+        "approvals": [],
+        "status": "Pending for approval"
+    },
+    {
+        "_id": {"$oid": "646473688b179ae29b7264d8"},
+        "user": "john.doe@company.com",
+        "client": "ClientC",
+        "project": "ProjectZ",
+        "dayStart": "22.05.2023",
+        "dayFinish": "28.05.2023",
+        "hours": "32",
+        "task": null,
+        "author": "john.doe@company.com",
+        "distributed": false,
+        "daily_hours": [{"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "8"}, {"$numberInt": "0"}, {"$numberInt": "0"}, {"$numberInt": "8"}, {"$numberInt": "0"}],
+        "approvals": ["alex.petrov@company.com", "john.doe@company.com"],
+        "status": "Declined"
+    }
+]

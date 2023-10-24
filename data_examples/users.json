@@ -1,0 +1,92 @@
+[
+{
+    "_id": {"$oid": "65376e9a9a6df2848c077cda"},
+    "email": "alex.petrov@company.com",
+    "grade": "Manager",
+    "firstname": "Alex",
+    "secondname": "Petrov",
+    "role": "finance",
+    "lastname": "Petrov",
+    "id": "4e9c4436-487f-4531-9558-22e04e4afb82",
+    "country": "Russia",
+    "status": "Invitation pending",
+    "language": "ru",
+    "notifications": {
+        "personal": {"statuses": ["Approved"], "enabled": false},
+        "owner": {"statuses": [], "enabled": true},
+        "team": {"statuses": ["Approved", "Declined"], "enabled": false}
+    }
+},
+{
+    "_id": {"$oid": "65376e9a9a6df2848c077cdb"},
+    "email": "sophia.li@company.com",
+    "grade": "Junior",
+    "firstname": "Sophia",
+    "secondname": "Li",
+    "role": "marketing",
+    "lastname": "Li",
+    "id": "5e9c4436-487f-4531-9558-22e04e4afb83",
+    "country": "China",
+    "status": "Active",
+    "language": "zh",
+    "notifications": {
+        "personal": {"statuses": ["Approved"], "enabled": true},
+        "owner": {"statuses": [], "enabled": false},
+        "team": {"statuses": [], "enabled": true}
+    }
+},
+{
+    "_id": {"$oid": "65376e9a9a6df2848c077cdc"},
+    "email": "john.doe@company.com",
+    "grade": "Senior Manager",
+    "firstname": "John",
+    "secondname": "Doe",
+    "role": "sales",
+    "lastname": "Doe",
+    "id": "6e9c4436-487f-4531-9558-22e04e4afb84",
+    "country": "USA",
+    "status": "Inactive",
+    "language": "en",
+    "notifications": {
+        "personal": {"statuses": ["Approved"], "enabled": false},
+        "owner": {"statuses": [], "enabled": true},
+        "team": {"statuses": [], "enabled": false}
+    }
+},
+{
+    "_id": {"$oid": "65376e9a9a6df2848c077cdd"},
+    "email": "maria.silva@company.com",
+    "grade": "Partner",
+    "firstname": "Maria",
+    "secondname": "Silva",
+    "role": "operations",
+    "lastname": "Silva",
+    "id": "7e9c4436-487f-4531-9558-22e04e4afb85",
+    "country": "Brazil",
+    "status": "Invitation accepted",
+    "language": "pt",
+    "notifications": {
+        "personal": {"statuses": ["Declined"], "enabled": true},
+        "owner": {"statuses": [], "enabled": false},
+        "team": {"statuses": [], "enabled": true}
+    }
+},
+{
+    "_id": {"$oid": "65376e9a9a6df2848c077cde"},
+    "email": "claire.martin@company.com",
+    "grade": "Intern",
+    "firstname": "Claire",
+    "secondname": "Martin",
+    "role": "it",
+    "lastname": "Martin",
+    "id": "8e9c4436-487f-4531-9558-22e04e4afb86",
+    "country": "France",
+    "status": "Active",
+    "language": "fr",
+    "notifications": {
+        "personal": {"statuses": ["Pending for approval"], "enabled": false},
+        "owner": {"statuses": [], "enabled": true},
+        "team": {"statuses": [], "enabled": false}
+    }
+}
+]
