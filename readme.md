@@ -2,9 +2,11 @@
 
 Hello! :)
 
-In this repository you can find a function used in planning process fro plannings objects creation, setting approvals and sending emails notifications.
+In this repository you can find a function used in planning process for plannings objects creation, setting approvals and sending email notifications.
 
 Please refer to the file `create_plannings.py`
+
+We are using MongoDB as database, you can use the cloud one or run it in Docker locally. `data_examples` folder contains data sample you need to injest into DB. 
 
 Payload example:
 
@@ -85,7 +87,7 @@ Payload example:
 This function will be used as base for you technical tasks:
 1. Create a fork of this repo
 2. Understand the logic of the function
-3. Refactor it
+3. Review and refactor it
 4. Push commit(s) to the for repository with the explanation
 5. Fill in section below with short description of changes you've made
 
