@@ -1,25 +1,60 @@
-import pandas as pd
-from mongodb import db
-from datetime import datetime, timedelta
-from bson.objectid import ObjectId
+from datetime import datetime
 
-from controllers import common as CommonUtils
+from pymongo.database import Database
 
+from controllers.common import (
+    extract_name_from_email,
+    send_template_mail,
+    get_full_name_opt,
+    parse_date,
+)
 from utils import (
     PLANNING_APPROVED,
-    PLANNING_CHANGE_REQUIRED,
     PLANNING_PENDING,
-    PLANNING_DECLINED,
     APPROVAL_MESSAGES,
     GATE_REDIRECT_LINK,
 )
+from .planning_crud import (
+    DBUsers, DBTeams, DBNotifications, DBPlanning, DBMessages
+)
 
 
+def generate_notification_text(planning: dict, users: list):
 
-async def approvalNotification(users, planning_id, status=PLANNING_PENDING, meta={}):
-    planning = db["planning"].find_one({"_id": ObjectId(planning_id)})
+    start = parse_date(planning["dayStart"])
+    end = parse_date(planning["dayFinish"])
+
+    start = f"{start.day}".zfill(2) + "." + f"{start.month}".zfill(2)
+    end = f"{end.day}".zfill(2) + "." + f"{end.month}".zfill(2)
+
+    author_fname = get_full_name_opt(planning.get("author"), users)
+    user_fname = get_full_name_opt(planning.get("user"), users)
+    return (
+        f'{author_fname} created booking for {user_fname} '
+        f'for {planning.get("client")} ({planning.get("project")}), '
+        f'from {start} to {end}, for {planning["hours"]} hours.'
+    )
+
+
+def check_notifications(dbusers: DBUsers, status: str, email: str, type: str):
+    user = dbusers.get(email)
+    notifications_statuses = list(
+        user["notifications"][type]["statuses"]
+    )
+    notifications = user["notifications"][type]["enabled"]
+    if notifications and status in notifications_statuses:
+        return True
+    return False
+
+
+async def approval_notification(
+    db: Database, users, planning_id, status=PLANNING_PENDING, meta={}
+):
+    dbplanning = DBPlanning(db)
+    planning = dbplanning.get_planning(planning_id)
     message = APPROVAL_MESSAGES[status]
     notifications = []
+
     for user in users:
         notifications.append(
             {
@@ -33,128 +68,65 @@ async def approvalNotification(users, planning_id, status=PLANNING_PENDING, meta
             }
         )
         if meta.get("send_mail"):
-            # Users
-            first_name, last_name = CommonUtils.extract_name_from_email(user)
-            user_fn = f"{first_name} {last_name}"
-
-            # Authors
-            fname, lname = CommonUtils.extract_name_from_email(planning["author"])
-            author_fn = f"{fname} {lname}"
-
-            # Approver
-            fname, lname = CommonUtils.extract_name_from_email(meta.get("approver"))
-            approver_fn = f"{fname} {lname}"
-
-            message = f'Planning created by {author_fn} to {user_fn} for \
-project "{planning.get("project")}" for {planning["hours"]} hours \
-from {planning["dayStart"]} to {planning["dayFinish"]} was approved by {approver_fn}.'
-
-            await CommonUtils.sendTemplateMail(
-                {
-                    "template": "planning.html",
-                    "replacers": {
-                        "[main_message]": message,
-                        "[receiver]": f"{first_name} {last_name}",
-                        "[invitation_link]": GATE_REDIRECT_LINK,
-                    },
-                    "receiver": user,
-                    "title": "Compass Bookings",
-                }
+            await send_notification(
+                user=user,
+                planning=planning,
+                planning_id=planning_id,
+                meta=meta
             )
+    dbnotifications = DBNotifications(db)
+    dbnotifications.create_notifications(notifications)
 
-    db["notifications"].insert_many(notifications)
 
-
-
-async def notify_users(data):
+async def notify_users(db: Database, data):
     insert_objects = []
     for planning in data:
         for user in planning["show_to"]:
-            insert_objects.append(
-                {
-                    "show_to": user,
-                    "text": planning["text"],
-                    "type": "notification",
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                }
-            )
-            first_name, last_name = CommonUtils.extract_name_from_email(user)
-            await CommonUtils.sendTemplateMail(
-                {
-                    "template": "planning.html",
-                    "replacers": {
-                        "[main_message]": planning["text"],
-                        "[receiver]": f"{first_name} {last_name}",
-                        "[invitation_link]": GATE_REDIRECT_LINK,
-                    },
-                    "receiver": user,
-                    "title": "Compass Bookings",
-                }
-            )
-    db["notifications"].insert_many(insert_objects)
+            insert_objects.append({
+                "show_to": user,
+                "text": planning["text"],
+                "type": "notification",
+                "date": datetime.now().strftime("%Y-%m-%d"),
+            })
+            await send_mail(user=user, message=planning["text"])
 
-def get_full_name(email):
-    user = db["users"].find_one({"email": email})
-    return f'{user["firstname"]} {user["lastname"]}'
+    dbnotifications = DBNotifications(db)
+    dbnotifications.create_notifications(insert_objects)
 
 
-def find_object_by_id(array, target_id):
-    result = [obj for obj in array if obj["_id"] == target_id]
-    return result[0] if result else None
-
-
-def insertChange(data, planning_id, manager, assigner):
+def insert_change(db: Database, data, planning_id, manager, assigner):
     text = data["text"]
-    text = text.replace(manager, get_full_name(manager))
-    text = text.replace(assigner, get_full_name(assigner))
+    text = text.replace(manager, get_full_name(db, manager))
+    text = text.replace(assigner, get_full_name(db, assigner))
 
     if data.get("type") != "conflict":
-        db["messages"].insert(
-            {
-                "planning_id": str(planning_id),
-                "message": text,
-                "change": True,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
-            }
-        )
+        dbmessages = DBMessages(db)
+        dbmessages.create_message({
+            "planning_id": str(planning_id),
+            "message": text,
+            "change": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+        })
 
 
-def planningApproval(
-    planning_id: str, creator: str, user: str, status: str, payload: dict = {}
+def planning_approval(
+    db: Database,
+    planning_id: str,
+    creator: str,
+    user: str,
+    status: str,
+    payload: dict = {}
 ):
     approvals = []
 
-    users_team = db["teams"].find_one(
-        {
-            "$or": [
-                {"approvers": {"$in": [user]}},
-                {"has_access": {"$in": [user]}},
-                {"members": {"$in": [user]}},
-                {"partners": {"$in": [user]}},
-                {"hrs": {"$in": [user]}},
-                {"internal_booking_levels": {"$elemMatch": {"$in": [user]}}},
-                {"external_booking_levels": {"$elemMatch": {"$in": [user]}}},
-            ]
-        }
-    )
-    creators_team = db["teams"].find_one(
-        {
-            "$or": [
-                {"approvers": {"$in": [creator]}},
-                {"has_access": {"$in": [creator]}},
-                {"members": {"$in": [creator]}},
-                {"partners": {"$in": [creator]}},
-                {"hrs": {"$in": [creator]}},
-                {"internal_booking_levels": {"$elemMatch": {"$in": [creator]}}},
-                {"external_booking_levels": {"$elemMatch": {"$in": [creator]}}},
-            ]
-        }
-    )
+    dbteams = DBTeams(db)
+    users_team = dbteams.get_user_teams(user=user)
+    creators_team = dbteams.get_user_teams(user=creator)
 
     if payload.get("project") == "Leaves":
-
-        creators_approvers_levels = creators_team.get("internal_booking_levels", {})
+        creators_approvers_levels = creators_team.get(
+            "internal_booking_levels", {})
         users_approvers_levels = users_team.get("internal_booking_levels", {})
 
         if creators_approvers_levels == {}:
@@ -165,38 +137,99 @@ def planningApproval(
             for i in entities_to_empty:
                 users_team[i] = []
 
-        amount_users_levels = len(users_approvers_levels)
-        creator_level = find_level_user(creator, users_approvers_levels)
-
-        if creator_level == amount_users_levels:
-            approvals = []
-            status = PLANNING_APPROVED
-        else:
-            approvals = users_approvers_levels.get(str(creator_level + 1))
-            status = PLANNING_PENDING
-            approvalNotification(approvals, planning_id, status)
-
-
+        approvals, status = gen_approvals_and_status(
+            db=db,
+            planning_id=planning_id,
+            creator=creator,
+            level_dict=users_approvers_levels
+        )
     else:
-        creators_approvers_levels = creators_team.get("external_booking_levels", {})
+        creators_approvers_levels = creators_team.get(
+            "external_booking_levels", {})
         users_approvers_levels = users_team.get("external_booking_levels", {})
 
-        amount_users_levels = len(users_approvers_levels)
-        creator_level = find_level_user(creator, users_approvers_levels)
-
-        if creator_level == amount_users_levels:
-            approvals = []
-            status = PLANNING_APPROVED
-        else:
-            approvals = users_approvers_levels.get(str(creator_level + 1))
-            status = PLANNING_PENDING
-            approvalNotification(approvals, planning_id, status)
+        approvals, status = gen_approvals_and_status(
+            db=db,
+            planning_id=planning_id,
+            creator=creator,
+            level_dict=users_approvers_levels
+        )
 
     return approvals, status
 
 
-def find_level_user(user, level_dict):
+def gen_approvals_and_status(
+    db: Database, planning_id: str, creator: str, level_dict: dict
+):
+
+    amount_users_levels = len(level_dict)
+    creator_level = find_level_user(creator, level_dict)
+
+    if creator_level == amount_users_levels:
+        approvals = []
+        status = PLANNING_APPROVED
+    else:
+        approvals = level_dict.get(str(creator_level + 1))
+        status = PLANNING_PENDING
+        approval_notification(db, approvals, planning_id, status)
+
+    return approvals, status
+
+
+def find_level_user(user, level_dict: dict):
     for key, value in level_dict.items():
         if user in value:
             return int(key)
     return 0
+
+
+async def send_notification(user, planning, meta):
+    """ Send notification to users
+    """
+    user_fn = _extract_fullname_from_email(user)
+    author_fn = _extract_fullname_from_email(planning["author"])
+    approver_fn = _extract_fullname_from_email(meta.get("approver"))
+
+    project = planning.get("project")
+    hours = planning["hours"]
+    day_start = planning["dayStart"]
+    day_finish = planning["dayFinish"]
+
+    message = (
+        f'Planning created by {author_fn} to {user_fn} for '
+        f'project "{project}" for {hours} hours from '
+        f'{day_start} to {day_finish} was approved by {approver_fn}.'
+    )
+
+    await send_mail(user=user, message=message)
+
+
+def _extract_fullname_from_email(email: str):
+    first_name, last_name = extract_name_from_email(email)
+    return f"{first_name} {last_name}"
+
+
+async def send_mail(user, message):
+    first_name, last_name = extract_name_from_email(user)
+    await send_template_mail({
+        "template": "planning.html",
+        "replacers": {
+            "[main_message]": message,
+            "[receiver]": f"{first_name} {last_name}",
+            "[invitation_link]": GATE_REDIRECT_LINK,
+        },
+        "receiver": user,
+        "title": "Compass Bookings",
+    })
+
+
+def get_full_name(db: Database, email: str):
+    dbusers = DBUsers(db)
+    user = dbusers.get(email=email)
+    firstname, lastname = user["firstname"], user["lastname"]
+    return f"{firstname} {lastname}"
+
+
+# def find_object_by_id(array, target_id):
+#     result = [obj for obj in array if obj["_id"] == target_id]
+#     return result[0] if result else None

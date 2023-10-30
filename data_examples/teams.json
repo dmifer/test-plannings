@@ -1,23 +1,25 @@
-{
-    "_id": {"$oid": "63a0370182fdef6e745cae12"},
-    "name": "Global Sales",
-    "members": [
-        "alex.petrov@company.com",
-        "sophia.li@company.com",
-        "john.doe@company.com",
-        "maria.silva@company.com",
-        "claire.martin@company.com"
-    ],
-    "has_access": [
-        "maria.silva@company.com",
-        "claire.martin@company.com"
-    ],
-    "external_booking_levels": {
-        "1": ["alex.petrov@company.com"],
-        "2": ["john.doe@company.com"]
-    },
-    "internal_booking_levels": {
-        "1": ["alex.petrov@company.com", "john.doe@company.com"],
-        "2": ["maria.silva@company.com"]
+[
+    {
+        "_id": {"$oid": "63a0370182fdef6e745cae12"},
+        "name": "Global Sales",
+        "members": [
+            "alex.petrov@company.com",
+            "sophia.li@company.com",
+            "yassinmhtat@gmail.com",
+            "maria.silva@company.com",
+            "claire.martin@company.com"
+        ],
+        "has_access": [
+            "maria.silva@company.com",
+            "claire.martin@company.com"
+        ],
+        "external_booking_levels": {
+            "1": ["alex.petrov@company.com"],
+            "2": ["yassinmhtat@gmail.com"]
+        },
+        "internal_booking_levels": {
+            "1": ["alex.petrov@company.com", "yassinmhtat@gmail.com"],
+            "2": ["maria.silva@company.com"]
+        }
     }
-}
+]
