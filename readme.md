@@ -6,7 +6,7 @@ In this repository you can find a function used in planning process for planning
 
 Please refer to the file `create_plannings.py`
 
-We are using MongoDB as database, you can use the cloud one or run it in Docker locally. `data_examples` folder contains data sample you need to injest into DB. 
+We are using MongoDB as database, you can use the cloud one or run it in Docker locally. `data_examples` folder contains data sample you need to injest into DB.
 
 Payload example:
 
@@ -94,4 +94,17 @@ This function will be used as base for you technical tasks:
 
 ### Changes made
 
-_Your changes_
+- I added the `.getignore` file, for excluding local files like the `venv` (Python virtual environment) folde.
+
+- I added the `.env` file that contains configuration values that may differ based on whether the application is running locally or on a production.
+
+- I converted the function names from `camel case` to `snake case`,
+  following Python's recommended naming convention.
+
+- I used **Dependency Injection** to inject the database instead of accessing it directly in the code. This approach is highly beneficial, especially when writing **tests**.
+
+- I created a new file named `planning_crud.py` and transferred all the database operations to it.
+
+- I refactored the code to make it simpler, more maintainable, and less prone to bugs. I ensured adherence to standard Python coding guidelines following **PEP 8**.
+
+- I aimed to adhere to the **Single Responsibility Principle**, so I refactoried functions that previously had multiple responsibilities into a list of simpler, more understandable functions.
