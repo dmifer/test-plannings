@@ -1,22 +1,19 @@
 import os
 import smtplib
-
-
 from datetime import datetime
-from mongodb import db
-
-from utils import HTML_TEMPLATES_SOURCE
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from utils import (
-    FROM,
-    PASSWORD,
-    PORT
+    HTML_TEMPLATES_SOURCE,
+    EMAIL_HOST,
+    EMAIL_FROM,
+    EMAIL_PASSWORD,
+    EMAIL_PORT,
 )
 
 
-def parseDate(string, format="%d.%m.%Y"):
+def parse_date(string, format="%d.%m.%Y"):
     return datetime.strptime(string, format)
 
 
@@ -34,7 +31,7 @@ def extract_name_from_email(email):
     return first_name, last_name
 
 
-async def sendTemplateMail(data, multiple=False):
+async def send_template_mail(data, multiple=False):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = data["title"]
 
@@ -49,19 +46,24 @@ async def sendTemplateMail(data, multiple=False):
     else:
         msg["To"] = receiver
 
-    for i, v in enumerate(replacers):
-        print("Replace ", v, replacers[v])
-        content = content.replace(v, replacers[v])
+    for _, value in enumerate(replacers):
+        content = content.replace(value, replacers[value])
 
     msg.attach(MIMEText(content, "html"))
 
     try:
-        server = smtplib.SMTP("smtp.office365.com", PORT)
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
         server.starttls()
-        server.login(FROM, PASSWORD)
-        server.sendmail(FROM, msg["To"], msg.as_string())
+        server.login(EMAIL_FROM, EMAIL_PASSWORD)
+        server.sendmail(EMAIL_FROM, receiver, msg.as_string())
         server.quit()
 
     except Exception as e:
         print(f"{type(e)} - {e} - Email send error")
         raise
+
+
+def get_full_name_opt(email, users):
+    user = list(filter(lambda x: x.get("email") == email, users))[0]
+    firstname, lastname = user.get("firstname"), user.get("lastname")
+    return f"{firstname} {lastname}"

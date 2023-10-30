@@ -1,9 +1,11 @@
-from pydantic import BaseModel, EmailStr, validator
 from typing import Optional
+
+from pydantic import BaseModel, EmailStr
 from bson.objectid import ObjectId
 
 
 class Planning(BaseModel):
+
     _id: ObjectId
     user: EmailStr
     client: str
@@ -28,3 +30,8 @@ class Planning(BaseModel):
                 "hours": "40",
             }
         }
+
+
+class InputPlanning(BaseModel):
+
+    planning: list[Planning]
